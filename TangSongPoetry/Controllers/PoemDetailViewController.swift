@@ -10,9 +10,9 @@ class PoemDetailViewController: UIViewController {
     
     // UI组件
     private let titleLabel = UILabel()
+    private let titlePinyinLabel = UILabel()
     private let authorLabel = UILabel()
-    private let pinyinLabel = UILabel()
-    private let contentLabel = UILabel()
+    private let poemStackView = UIStackView()
     private let translationTitleLabel = UILabel()
     private let translationLabel = UILabel()
     private let analysisTitleLabel = UILabel()
@@ -105,6 +105,14 @@ class PoemDetailViewController: UIViewController {
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
         
+        // 标题拼音标签
+        contentView.addSubview(titlePinyinLabel)
+        titlePinyinLabel.translatesAutoresizingMaskIntoConstraints = false
+        titlePinyinLabel.font = UIFont.systemFont(ofSize: 14)
+        titlePinyinLabel.textAlignment = .center
+        titlePinyinLabel.textColor = .systemGray
+        titlePinyinLabel.numberOfLines = 0
+        
         // 作者标签
         contentView.addSubview(authorLabel)
         authorLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -112,20 +120,13 @@ class PoemDetailViewController: UIViewController {
         authorLabel.textAlignment = .center
         authorLabel.textColor = .secondaryLabel
         
-        // 拼音标签
-        contentView.addSubview(pinyinLabel)
-        pinyinLabel.translatesAutoresizingMaskIntoConstraints = false
-        pinyinLabel.font = UIFont.systemFont(ofSize: 14)
-        pinyinLabel.textAlignment = .center
-        pinyinLabel.numberOfLines = 0
-        pinyinLabel.textColor = .systemGray
-        
-        // 内容标签
-        contentView.addSubview(contentLabel)
-        contentLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentLabel.font = UIFont.systemFont(ofSize: 18)
-        contentLabel.textAlignment = .center
-        contentLabel.numberOfLines = 0
+        // 拼音栈视图
+        contentView.addSubview(poemStackView)
+        poemStackView.translatesAutoresizingMaskIntoConstraints = false
+        poemStackView.axis = .vertical
+        poemStackView.spacing = 4
+        poemStackView.alignment = .center
+        poemStackView.distribution = .fill
         
         // 翻译标题
         contentView.addSubview(translationTitleLabel)
@@ -155,7 +156,11 @@ class PoemDetailViewController: UIViewController {
         
         // 设置约束
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+            titlePinyinLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+            titlePinyinLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            titlePinyinLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            titleLabel.topAnchor.constraint(equalTo: titlePinyinLabel.bottomAnchor, constant: 4),
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
@@ -163,15 +168,11 @@ class PoemDetailViewController: UIViewController {
             authorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             authorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
-            pinyinLabel.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 24),
-            pinyinLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            pinyinLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            poemStackView.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 24),
+            poemStackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            poemStackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
-            contentLabel.topAnchor.constraint(equalTo: pinyinLabel.bottomAnchor, constant: 8),
-            contentLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            contentLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            
-            translationTitleLabel.topAnchor.constraint(equalTo: contentLabel.bottomAnchor, constant: 32),
+            translationTitleLabel.topAnchor.constraint(equalTo: poemStackView.bottomAnchor, constant: 32),
             translationTitleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             translationTitleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
@@ -197,6 +198,11 @@ class PoemDetailViewController: UIViewController {
         title = poem.title
         titleLabel.text = poem.title
         
+        // 设置标题拼音
+        if let poemTitle = poem.title {
+            titlePinyinLabel.text = simulatePinyin(for: poemTitle)
+        }
+        
         // 设置作者和朝代
         if let author = poem.author?.name, let dynasty = poem.dynasty {
             authorLabel.text = "[\(dynasty)] \(author)"
@@ -204,15 +210,41 @@ class PoemDetailViewController: UIViewController {
             authorLabel.text = author
         }
         
-        // 设置拼音
-        if let content = poem.content {
-            pinyinLabel.text = getPinyinForPoem(content)
-        } else {
-            pinyinLabel.isHidden = true
-        }
+        // 清空栈视图
+        poemStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         
-        // 设置内容
-        contentLabel.text = poem.content
+        // 设置诗句和拼音
+        if let content = poem.content {
+            let lines = content.components(separatedBy: "\n")
+            
+            for line in lines {
+                if !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // 创建拼音标签
+                    let pinyinLabel = UILabel()
+                    pinyinLabel.font = UIFont.systemFont(ofSize: 14)
+                    pinyinLabel.textAlignment = .center
+                    pinyinLabel.textColor = .systemGray
+                    pinyinLabel.text = simulatePinyin(for: line)
+                    
+                    // 创建诗句标签
+                    let lineLabel = UILabel()
+                    lineLabel.font = UIFont.systemFont(ofSize: 18)
+                    lineLabel.textAlignment = .center
+                    lineLabel.text = line
+                    
+                    // 添加到栈视图
+                    poemStackView.addArrangedSubview(pinyinLabel)
+                    poemStackView.addArrangedSubview(lineLabel)
+                    
+                    // 添加诗句间的间距（如果不是最后一行）
+                    if line != lines.last {
+                        let spacerView = UIView()
+                        spacerView.heightAnchor.constraint(equalToConstant: 16).isActive = true
+                        poemStackView.addArrangedSubview(spacerView)
+                    }
+                }
+            }
+        }
         
         // 设置翻译
         if let translation = poem.translation, !translation.isEmpty {
@@ -313,34 +345,9 @@ class PoemDetailViewController: UIViewController {
         present(activityViewController, animated: true, completion: nil)
     }
     
-    // 获取诗词拼音的方法
-    private func getPinyinForPoem(_ content: String) -> String {
-        // 这里应该调用实际的拼音转换服务或API
-        // 下面是简单示例，实际应用中需要替换为真实的拼音获取逻辑
-        
-        // 示例：将"床前明月光"转换为"chuáng qián míng yuè guāng"
-        // 在实际应用中，您需要替换为真正的拼音服务
-        
-        let poemLines = content.components(separatedBy: "\n")
-        var pinyinLines: [String] = []
-        
-        for line in poemLines {
-            // 这里是模拟，实际应用中应该调用真实的拼音API
-            let pinyinLine = simulatePinyin(for: line)
-            pinyinLines.append(pinyinLine)
-        }
-        
-        return pinyinLines.joined(separator: "\n")
-    }
-    
     // 模拟拼音转换，实际应用中应替换为真实的拼音服务
     private func simulatePinyin(for text: String) -> String {
-        // 这只是一个示例方法，实际应用中需要使用真实的拼音转换API
-        // 您可以使用第三方库或服务来获取准确的拼音
-        
-        // 在真实实现中删除此方法，使用实际的拼音转换服务
-//        return text.map { _ in "pīn yīn" }.joined(separator: " ")
-        
+        // 使用CoreFoundation的拼音转换功能
         let mutableString = NSMutableString(string: text) as CFMutableString
             // 将汉字转换为拼音
             CFStringTransform(mutableString, nil, kCFStringTransformToLatin, false)
