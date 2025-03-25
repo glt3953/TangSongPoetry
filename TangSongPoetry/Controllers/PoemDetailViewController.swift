@@ -1,7 +1,7 @@
 import UIKit
 import AVFoundation
 
-class PoemDetailViewController: UIViewController {
+class PoemDetailViewController: UIViewController, AVSpeechSynthesizerDelegate {
     
     // MARK: - 属性
     
@@ -41,6 +41,7 @@ class PoemDetailViewController: UIViewController {
         
         setupUI()
         configureUI()
+        speechSynthesizer.delegate = self // 设置代理
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -410,13 +411,15 @@ class PoemDetailViewController: UIViewController {
         speakButton.tintColor = .systemRed
     }
     
-    private func stopSpeaking() {
-        speechSynthesizer.stopSpeaking(at: .immediate)
+    private func resetSpeakingState() {
         isSpeaking = false
-        
-        // 更新按钮状态
         speakButton.setImage(UIImage(systemName: "speaker.wave.2"), for: .normal)
         speakButton.tintColor = .systemBlue
+    }
+    
+    private func stopSpeaking() {
+        speechSynthesizer.stopSpeaking(at: .immediate)
+        resetSpeakingState()
     }
     
     // 模拟拼音转换，实际应用中应替换为真实的拼音服务
@@ -484,5 +487,20 @@ class PoemDetailViewController: UIViewController {
         }
         
         return (pinyin, line)
+    }
+    
+    // 修改代理方法
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        // 朗读完成时重置状态
+        DispatchQueue.main.async { [weak self] in
+            self?.resetSpeakingState()
+        }
+    }
+    
+    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        // 朗读被取消时重置状态
+        DispatchQueue.main.async { [weak self] in
+            self?.resetSpeakingState()
+        }
     }
 }
