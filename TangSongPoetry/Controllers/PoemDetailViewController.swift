@@ -1,4 +1,5 @@
 import UIKit
+import AVFoundation
 
 class PoemDetailViewController: UIViewController {
     
@@ -18,6 +19,9 @@ class PoemDetailViewController: UIViewController {
     private let analysisTitleLabel = UILabel()
     private let analysisLabel = UILabel()
     private let favoriteButton = UIButton()
+    private let speechSynthesizer = AVSpeechSynthesizer()
+    private let speakButton = UIButton()
+    private var isSpeaking = false
     
     // MARK: - 初始化
     
@@ -42,6 +46,11 @@ class PoemDetailViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         updateFavoriteButton()
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        stopSpeaking()
     }
     
     // MARK: - UI设置
@@ -84,7 +93,12 @@ class PoemDetailViewController: UIViewController {
         favoriteButton.setImage(UIImage(systemName: "heart.fill"), for: .selected)
         favoriteButton.addTarget(self, action: #selector(toggleFavorite), for: .touchUpInside)
         
+        // 添加朗读按钮
+        speakButton.setImage(UIImage(systemName: "speaker.wave.2"), for: .normal)
+        speakButton.addTarget(self, action: #selector(toggleSpeaking), for: .touchUpInside)
+        
         let favoriteBarButton = UIBarButtonItem(customView: favoriteButton)
+        let speakBarButton = UIBarButtonItem(customView: speakButton)
         
         // 添加分享按钮
         let shareButton = UIBarButtonItem(
@@ -94,7 +108,7 @@ class PoemDetailViewController: UIViewController {
             action: #selector(sharePoem)
         )
         
-        navigationItem.rightBarButtonItems = [favoriteBarButton, shareButton]
+        navigationItem.rightBarButtonItems = [favoriteBarButton, shareButton, speakBarButton]
     }
     
     private func setupLabels() {
@@ -350,6 +364,59 @@ class PoemDetailViewController: UIViewController {
         }
         
         present(activityViewController, animated: true, completion: nil)
+    }
+    
+    @objc private func toggleSpeaking() {
+        if isSpeaking {
+            stopSpeaking()
+        } else {
+            startSpeaking()
+        }
+    }
+    
+    private func startSpeaking() {
+        // 构建朗读文本
+        var textToSpeak = ""
+        
+        if let title = poem.title {
+            textToSpeak += title + "。"
+        }
+        
+        if let dynasty = poem.dynasty {
+            textToSpeak += dynasty + "。"
+        }
+        
+        if let author = poem.author?.name {
+            textToSpeak += author + "。"
+        }
+        
+        if let content = poem.content {
+            textToSpeak += content.replacingOccurrences(of: "\n", with: "。")
+        }
+        
+        // 创建朗读配置
+        let utterance = AVSpeechUtterance(string: textToSpeak)
+        utterance.voice = AVSpeechSynthesisVoice(language: "zh-CN") // 使用中文声音
+        utterance.rate = 0.5 // 调整语速
+        utterance.pitchMultiplier = 1.0 // 音调
+        utterance.volume = 1.0 // 音量
+        
+        // 开始朗读
+        speechSynthesizer.speak(utterance)
+        isSpeaking = true
+        
+        // 更新按钮状态
+        speakButton.setImage(UIImage(systemName: "speaker.slash"), for: .normal)
+        speakButton.tintColor = .systemRed
+    }
+    
+    private func stopSpeaking() {
+        speechSynthesizer.stopSpeaking(at: .immediate)
+        isSpeaking = false
+        
+        // 更新按钮状态
+        speakButton.setImage(UIImage(systemName: "speaker.wave.2"), for: .normal)
+        speakButton.tintColor = .systemBlue
     }
     
     // 模拟拼音转换，实际应用中应替换为真实的拼音服务
