@@ -125,7 +125,7 @@ class PoemDetailViewController: UIViewController {
         poemStackView.translatesAutoresizingMaskIntoConstraints = false
         poemStackView.axis = .vertical
         poemStackView.spacing = 4
-        poemStackView.alignment = .center
+        poemStackView.alignment = .fill
         poemStackView.distribution = .fill
         
         // 翻译标题
@@ -219,18 +219,25 @@ class PoemDetailViewController: UIViewController {
             
             for line in lines {
                 if !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    // 处理长行
+                    let (pinyinText, lineText) = processLongLine(line)
+                    
                     // 创建拼音标签
                     let pinyinLabel = UILabel()
                     pinyinLabel.font = UIFont.systemFont(ofSize: 14)
                     pinyinLabel.textAlignment = .center
                     pinyinLabel.textColor = .systemGray
-                    pinyinLabel.text = simulatePinyin(for: line)
+                    pinyinLabel.numberOfLines = 0
+                    pinyinLabel.text = pinyinText
+                    pinyinLabel.lineBreakMode = .byCharWrapping
                     
                     // 创建诗句标签
                     let lineLabel = UILabel()
                     lineLabel.font = UIFont.systemFont(ofSize: 18)
                     lineLabel.textAlignment = .center
-                    lineLabel.text = line
+                    lineLabel.numberOfLines = 0
+                    lineLabel.text = lineText
+                    lineLabel.lineBreakMode = .byCharWrapping
                     
                     // 添加到栈视图
                     poemStackView.addArrangedSubview(pinyinLabel)
@@ -364,5 +371,51 @@ class PoemDetailViewController: UIViewController {
         //    print("去掉空格: \(cleanedPinyin)")
             
             return pinyin
+    }
+    
+    // 为长诗句处理换行和拼音对齐
+    private func processLongLine(_ line: String) -> (String, String) {
+        // 获取拼音
+        let pinyin = simulatePinyin(for: line)
+        
+        // 检查是否需要拆分行
+        if line.count > 15 { // 可以根据具体情况调整这个阈值
+            // 可以在这里实现自动拆分长行的逻辑
+            // 例如，在适当的位置添加换行符
+            
+            // 这个简单示例每15个字符换一次行
+            var wrappedText = ""
+            var index = 0
+            
+            for char in line {
+                wrappedText.append(char)
+                index += 1
+                
+                if index % 15 == 0 && index < line.count {
+                    wrappedText.append("\n")
+                }
+            }
+            
+            // 同样处理拼音
+            var wrappedPinyin = ""
+            let pinyinComponents = pinyin.components(separatedBy: " ")
+            index = 0
+            
+            for component in pinyinComponents {
+                if index > 0 {
+                    wrappedPinyin.append(" ")
+                }
+                wrappedPinyin.append(component)
+                index += 1
+                
+                if index % 15 == 0 && index < pinyinComponents.count {
+                    wrappedPinyin.append("\n")
+                }
+            }
+            
+            return (wrappedPinyin, wrappedText)
+        }
+        
+        return (pinyin, line)
     }
 }
