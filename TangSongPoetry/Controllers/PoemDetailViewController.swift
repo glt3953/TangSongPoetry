@@ -11,6 +11,7 @@ class PoemDetailViewController: UIViewController {
     // UI组件
     private let titleLabel = UILabel()
     private let authorLabel = UILabel()
+    private let pinyinLabel = UILabel()
     private let contentLabel = UILabel()
     private let translationTitleLabel = UILabel()
     private let translationLabel = UILabel()
@@ -111,6 +112,14 @@ class PoemDetailViewController: UIViewController {
         authorLabel.textAlignment = .center
         authorLabel.textColor = .secondaryLabel
         
+        // 拼音标签
+        contentView.addSubview(pinyinLabel)
+        pinyinLabel.translatesAutoresizingMaskIntoConstraints = false
+        pinyinLabel.font = UIFont.systemFont(ofSize: 14)
+        pinyinLabel.textAlignment = .center
+        pinyinLabel.numberOfLines = 0
+        pinyinLabel.textColor = .systemGray
+        
         // 内容标签
         contentView.addSubview(contentLabel)
         contentLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -154,7 +163,11 @@ class PoemDetailViewController: UIViewController {
             authorLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             authorLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
-            contentLabel.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 24),
+            pinyinLabel.topAnchor.constraint(equalTo: authorLabel.bottomAnchor, constant: 24),
+            pinyinLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            pinyinLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            contentLabel.topAnchor.constraint(equalTo: pinyinLabel.bottomAnchor, constant: 8),
             contentLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             contentLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             
@@ -189,6 +202,13 @@ class PoemDetailViewController: UIViewController {
             authorLabel.text = "[\(dynasty)] \(author)"
         } else if let author = poem.author?.name {
             authorLabel.text = author
+        }
+        
+        // 设置拼音
+        if let content = poem.content {
+            pinyinLabel.text = getPinyinForPoem(content)
+        } else {
+            pinyinLabel.isHidden = true
         }
         
         // 设置内容
@@ -291,5 +311,51 @@ class PoemDetailViewController: UIViewController {
         }
         
         present(activityViewController, animated: true, completion: nil)
+    }
+    
+    // 获取诗词拼音的方法
+    private func getPinyinForPoem(_ content: String) -> String {
+        // 这里应该调用实际的拼音转换服务或API
+        // 下面是简单示例，实际应用中需要替换为真实的拼音获取逻辑
+        
+        // 示例：将"床前明月光"转换为"chuáng qián míng yuè guāng"
+        // 在实际应用中，您需要替换为真正的拼音服务
+        
+        let poemLines = content.components(separatedBy: "\n")
+        var pinyinLines: [String] = []
+        
+        for line in poemLines {
+            // 这里是模拟，实际应用中应该调用真实的拼音API
+            let pinyinLine = simulatePinyin(for: line)
+            pinyinLines.append(pinyinLine)
+        }
+        
+        return pinyinLines.joined(separator: "\n")
+    }
+    
+    // 模拟拼音转换，实际应用中应替换为真实的拼音服务
+    private func simulatePinyin(for text: String) -> String {
+        // 这只是一个示例方法，实际应用中需要使用真实的拼音转换API
+        // 您可以使用第三方库或服务来获取准确的拼音
+        
+        // 在真实实现中删除此方法，使用实际的拼音转换服务
+//        return text.map { _ in "pīn yīn" }.joined(separator: " ")
+        
+        let mutableString = NSMutableString(string: text) as CFMutableString
+            // 将汉字转换为拼音
+            CFStringTransform(mutableString, nil, kCFStringTransformToLatin, false)
+            print("把\"\(text)\"转为拼音: \(mutableString)")
+            
+        //    // 去掉拼音的音标
+        //    CFStringTransform(mutableString, nil, kCFStringTransformStripDiacritics, false)
+        //    print("去掉拼音的音标: \(mutableString)")
+            
+            let pinyin = mutableString as String
+            
+        //    // 去掉空格
+        //    let cleanedPinyin = pinyin.replacingOccurrences(of: " ", with: "")
+        //    print("去掉空格: \(cleanedPinyin)")
+            
+            return pinyin
     }
 }
